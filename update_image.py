@@ -17,33 +17,30 @@ def get_screenshot():
             "access_key": SCREENSHOT_ONE_KEY,
             "url": TARGET_URL,
             "format": "png",
-            "viewport_width": 1200,
-            "viewport_height": 1200,
             "block_cookie_banners": "true",
             "block_ads": "true",
-            "delay": 12, # Wait for numbers to animate in
-            # This 'clip_selector' crops perfectly to the stats grid
-            "clip_selector": ".stats-profile-stats", 
-            "device_scale_factor": 3, # This "zooms in" for high-res text
+            "delay": 10,
+            # This selector targets the "Lifetime" stats specifically
+            "selector": ".stats-profile-stats", 
+            "device_scale_factor": 2,
             "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
-            "wait_until": "networkidle2"
+            "wait_until": "networkidle0"
         }
         
-        print(f"Requesting zoomed/cropped screenshot...")
+        print(f"Requesting cropped stats screenshot...")
         response = requests.get(api_url, params=params, timeout=90)
         
         if response.status_code != 200:
-            print(f"API Error: {response.status_code}")
+            print(f"API Error: {response.status_code} - {response.text}")
             return False
 
         img = Image.open(BytesIO(response.content))
         
-        # Resize to TRMNL dimensions (800x480)
-        # Note: If the crop is a square, this will stretch it to fill the TRMNL screen
+        # Resize to fit TRMNL (800x480)
         img = img.resize((800, 480), Image.Resampling.LANCZOS).convert("L")
         
         img.save("display.png")
-        print("SUCCESS: Zoomed image saved.")
+        print("SUCCESS: Image saved.")
         return True
     except Exception as e:
         print(f"CRITICAL ERROR: {e}")
