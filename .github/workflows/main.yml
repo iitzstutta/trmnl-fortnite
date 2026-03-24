@@ -1,0 +1,20 @@
+name: Update My TRMNL
+on:
+  schedule:
+    - cron: '0 * * * *' # This tells it to run every hour
+  workflow_dispatch: # This adds a button so you can run it manually
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+      - name: Install tools
+        run: pip install requests
+      - name: Run the update
+        env:
+          TRMNL_API_KEY: ${{ secrets.TRMNL_API_KEY }}
+        run: python update_image.py
