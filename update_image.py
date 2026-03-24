@@ -1,33 +1,36 @@
 import requests
 import os
 import sys
+import urllib.parse # New tool to fix the URL
 from io import BytesIO
 from PIL import Image
 
 # Configuration
 TRMNL_API_KEY = os.environ.get("TRMNL_API_KEY")
-# Your new ScreenshotOne Key
 SCREENSHOT_ONE_KEY = "dQfU64rOlaCiYQ" 
 PLUGIN_UUID = "69e73978-1b63-413e-b213-8d59f077baf5"
 
-# The URL of the Juice WRLD stats card
-TARGET_URL = "https://fortnite.gg/stats-card?player=Juice%20WRLD%20%E9%AC%BC"
+# The original player URL
+PLAYER_URL = "https://fortnite.gg/stats-card?player=Juice WRLD 鬼"
 
 def get_screenshot():
     try:
-        # ScreenshotOne API URL
+        # This part cleans the URL so the '鬼' symbol doesn't break things
+        safe_url = urllib.parse.quote(PLAYER_URL, safe=':/?=')
+        
         api_url = "https://api.screenshotone.com/take"
         params = {
             "access_key": SCREENSHOT_ONE_KEY,
-            "url": TARGET_URL,
+            "url": safe_url,
             "format": "png",
             "viewport_width": 1280,
             "viewport_height": 720,
             "block_cookie_banners": "true",
-            "wait_until": "networkidle0" # Waits for the stats to actually load
+            "wait_until": "networkidle0",
+            "delay": 3 # Added a 3-second wait to ensure stats load
         }
         
-        print(f"Requesting screenshot from ScreenshotOne...")
+        print(f"Requesting screenshot for: {safe_url}")
         response = requests.get(api_url, params=params, timeout=60)
         
         if response.status_code != 200:
@@ -35,11 +38,7 @@ def get_screenshot():
             return False
 
         img = Image.open(BytesIO(response.content))
-        
-        # Resize to TRMNL 800x480
         img = img.resize((800, 480), Image.Resampling.LANCZOS)
-        
-        # Convert to Grayscale
         img = img.convert("L")
 
         img.save("display.png")
@@ -62,5 +61,4 @@ if __name__ == "__main__":
         requests.post(api_url, json=payload, headers=headers)
         print("TRMNL notified.")
     else:
-        # Fails the GitHub action so you know it didn't work
         sys.exit(1)
