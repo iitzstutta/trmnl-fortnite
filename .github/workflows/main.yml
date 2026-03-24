@@ -1,29 +1,4 @@
-name: Update My TRMNL
-on:
-  schedule:
-    - cron: '0 * * * *' # This runs every hour
-  workflow_dispatch: # This gives you the manual "Run" button
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write # CRITICAL: This allows the bot to save the image
-    steps:
-      - uses: actions/checkout@v4
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.9'
-      - name: Install tools
-        run: pip install requests Pillow
-      - name: Run the update
-        env:
-          TRMNL_API_KEY: ${{ secrets.TRMNL_API_KEY }}
-        run: python update_image.py
-      - name: Save Image to Repo
+- name: Install tools
         run: |
-          git config --global user.name "GitHub Action"
-          git config --global user.email "action@github.com"
-          git add display.png
-          git commit -m "Update Fortnite Image" || exit 0
-          git push
+          python -m pip install --upgrade pip
+          pip install requests Pillow beautifulsoup4 cloudscraper
