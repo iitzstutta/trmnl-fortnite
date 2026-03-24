@@ -12,47 +12,38 @@ STATS_URL = "https://fortnite.gg/stats?player=Juice%20WRLD%20%E9%AC%BC"
 
 def process_and_save_image():
     try:
-        # We use a very specific Header to make the website think we are a real Chrome browser
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-            'Accept-Language': 'en-US,en;q=0.9'
-        }
-        
+        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
         response = requests.get(STATS_URL, headers=headers, timeout=15)
         soup = BeautifulSoup(response.text, 'html.parser')
         
-        # FIND THE IMAGE: We look for the avatar specifically inside the stats-header
-        img_tag = soup.find('img', {'class': 'stats-header-avatar'})
+        # New Strategy: Look for the specific 'og:image' meta tag. 
+        # This is what social media sites use to show a preview, and it usually contains the player avatar!
+        meta_img = soup.find("meta", property="og:image")
         
-        if img_tag and img_tag.get('src'):
-            image_source = img_tag['src']
-            print(f"DEBUG: Found Player Image: {image_source[:50]}...")
+        if meta_img and meta_img.get("content"):
+            image_source = meta_img["content"]
+            print(f"Found image via Meta Tag: {image_source}")
         else:
-            # Fallback if the site blocks the specific avatar
-            print("DEBUG: Avatar not found, looking for any large player image...")
-            all_imgs = soup.find_all('img')
-            # Look for an image that likely contains 'fnbr' or 'outfit' in the link
-            image_source = next((i['src'] for i in all_imgs if 'fnbr.co' in i.get('src', '') or 'outfit' in i.get('src', '')), "https://fortnite.gg/img/logo.png")
+            # Plan C: Look for the first image that mentions 'fnbr' or 'outfit'
+            print("Meta tag failed, searching all images...")
+            all_imgs = [img.get('src') for img in soup.find_all('img') if img.get('src')]
+            image_source = next((s for s in all_imgs if "outfit" in s or "fnbr" in s), None)
 
-        # 1. Get the raw bytes of the image
-        if "base64," in image_source:
-            img_data = image_source.split("base64,")[1]
-            binary_data = base64.b64decode(img_data)
-        else:
-            if image_source.startswith('//'): image_source = 'https:' + image_source
-            binary_data = requests.get(image_source).content
+        if not image_source:
+            print("Still nothing. Using logo as ultimate fallback.")
+            image_source = "https://fortnite.gg/img/logo.png"
 
-        # 2. Open and Format
+        # Download and Format
+        if image_source.startswith('//'): image_source = 'https:' + image_source
+        binary_data = requests.get(image_source).content
+
         img = Image.open(BytesIO(binary_data))
-        if img.mode in ("RGBA", "P"): 
-            img = img.convert("RGB")
+        if img.mode in ("RGBA", "P"): img = img.convert("RGB")
         
-        # 3. Resize and Grayscale
-        # 800x480 for TRMNL
+        # Resize to 800x480
         img = img.resize((800, 480), Image.Resampling.LANCZOS)
         img = img.convert("L")
 
-        # 4. Save
         img.save("display.png")
         return True
     except Exception as e:
@@ -69,7 +60,7 @@ def poke_trmnl():
     payload = {"merge_variables": {"image_url": image_url}}
     
     requests.post(url, json=payload, headers=headers)
-    print(f"Update sent to TRMNL!")
+    print("Update sent to TRMNL!")
 
 if __name__ == "__main__":
     if process_and_save_image():
