@@ -1,19 +1,19 @@
 name: Update My TRMNL
 on:
   schedule:
-    - cron: '0 * * * *' # This tells it to run every hour
-  workflow_dispatch: # This adds a button so you can run it manually
+    - cron: '0 * * * *' # Runs every hour
+  workflow_dispatch: # Allows manual run
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4 # Updated version
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5 # Updated version
         with:
           python-version: '3.9'
       - name: Install tools
-        run: pip install requests
+        run: pip install requests beautifulsoup4
       - name: Run the update
         env:
           TRMNL_API_KEY: ${{ secrets.TRMNL_API_KEY }}
