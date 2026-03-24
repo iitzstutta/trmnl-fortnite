@@ -2,7 +2,7 @@ import cloudscraper
 from bs4 import BeautifulSoup
 import os
 from io import BytesIO
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw
 
 TRMNL_API_KEY = os.environ.get("TRMNL_API_KEY")
 PLUGIN_UUID = "69e73978-1b63-413e-b213-8d59f077baf5"
@@ -10,46 +10,28 @@ PLAYER_URL = "https://fortnite.gg/stats?player=Juice%20WRLD%20%E9%AC%BC"
 
 def get_stats_and_image():
     try:
-        # 1. Bypass Cloudflare using cloudscraper
-        scraper = cloudscraper.create_scraper(browser={'browser': 'chrome', 'platform': 'windows', 'mobile': False})
+        # 1. Bypass Cloudflare
+        scraper = cloudscraper.create_scraper()
         response = scraper.get(PLAYER_URL)
-        
-        if response.status_code != 200:
-            print(f"Bypass failed. Status: {response.status_code}")
-            return None
-
         soup = BeautifulSoup(response.text, 'html.parser')
 
-        # 2. Grab the Player Avatar
+        # 2. Get Avatar
         img_tag = soup.find('img', {'class': 'stats-header-avatar'})
         avatar_url = img_tag['src'] if img_tag else "https://fortnite.gg/img/logo.png"
         if avatar_url.startswith('//'): avatar_url = 'https:' + avatar_url
 
-        # 3. Grab the Stats (Wins, K/D, etc.)
-        # We look for the 'value' class which usually holds the numbers
-        stats_labels = soup.find_all(class_='stats-profile-label')
-        stats_values = soup.find_all(class_='stats-profile-value')
-        
-        stats_text = ""
-        for label, val in zip(stats_labels[:4], stats_values[:4]):
-            stats_text += f"{label.text}: {val.text}  "
-
-        # 4. Create a NEW image (800x480) and draw the stats on it
-        # This replaces the need for a screenshot!
+        # 3. Create the TRMNL Canvas (800x480)
         img = Image.new('RGB', (800, 480), color=(255, 255, 255))
-        draw = ImageDraw.Draw(img)
         
-        # Download avatar and paste it
+        # Download and paste the Juice WRLD character
         avatar_resp = scraper.get(avatar_url)
         avatar_img = Image.open(BytesIO(avatar_resp.content)).convert("RGB")
-        avatar_img = avatar_img.resize((300, 300))
-        img.paste(avatar_img, (50, 50))
+        
+        # Resize avatar to fit the left side
+        avatar_img = avatar_img.resize((400, 400), Image.Resampling.LANCZOS)
+        img.paste(avatar_img, (20, 40))
 
-        # Add Text (Simple fallback font)
-        draw.text((400, 100), "JUICE WRLD STATS", fill=(0,0,0))
-        draw.text((400, 150), stats_text, fill=(0,0,0))
-
-        # 5. Final Grayscale conversion
+        # 4. Final conversion to Grayscale
         img = img.convert("L")
         img.save("display.png")
         return True
@@ -70,5 +52,6 @@ def poke_trmnl():
     print("TRMNL notified.")
 
 if __name__ == "__main__":
+    import requests # Ensure requests is available here
     if get_stats_and_image():
         poke_trmnl()
