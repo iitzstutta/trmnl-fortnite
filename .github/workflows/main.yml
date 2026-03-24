@@ -1,13 +1,13 @@
 name: Update My TRMNL
 on:
   schedule:
-    - cron: '0 * * * *'
-  workflow_dispatch:
+    - cron: '0 * * * *' # This runs every hour
+  workflow_dispatch: # This gives you the manual "Run" button
 jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
-      contents: write # Allows GitHub to save the image file
+      contents: write # CRITICAL: This allows the bot to save the image
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python
@@ -15,12 +15,12 @@ jobs:
         with:
           python-version: '3.9'
       - name: Install tools
-        run: pip install requests beautifulsoup4 Pillow
+        run: pip install requests Pillow
       - name: Run the update
         env:
           TRMNL_API_KEY: ${{ secrets.TRMNL_API_KEY }}
         run: python update_image.py
-      - name: Commit and Push Image
+      - name: Save Image to Repo
         run: |
           git config --global user.name "GitHub Action"
           git config --global user.email "action@github.com"
