@@ -3,34 +3,40 @@ import os
 from io import BytesIO
 from PIL import Image
 
+# Configuration
 TRMNL_API_KEY = os.environ.get("TRMNL_API_KEY")
+# Using the key you provided directly to make it easier for you
+ABSTRACT_API_KEY = "e62edcc5906c4acdb7f4e838d0fa7834"
 PLUGIN_UUID = "69e73978-1b63-413e-b213-8d59f077baf5"
 
-# We are going to use a 'WSRV' proxy. 
-# This service downloads the image FOR us and sends it back. 
-# It's great for bypassing 403 blocks.
-SOURCE_URL = "https://fortnite.gg/stats-card?player=Juice%20WRLD%20%E9%AC%BC"
-PROXY_URL = f"https://wsrv.nl/?url={SOURCE_URL}&output=png"
+# The URL of the Juice WRLD stats card
+TARGET_URL = "https://fortnite.gg/stats-card?player=Juice%20WRLD%20%E9%AC%BC"
 
-def process_and_save_image():
+def get_screenshot():
     try:
-        print(f"Asking Proxy to grab image...")
-        response = requests.get(PROXY_URL, timeout=30)
+        # We call AbstractAPI to take a "picture" of the website for us
+        # this bypasses the 403 blocks because Abstract uses a real browser
+        api_url = f"https://screenshots.abstractapi.com/v1/?api_key={ABSTRACT_API_KEY}&url={TARGET_URL}"
+        
+        print("Requesting screenshot from AbstractAPI...")
+        response = requests.get(api_url, timeout=30)
         
         if response.status_code != 200:
-            print(f"Proxy also blocked or failed. Status: {response.status_code}")
+            print(f"API Error: {response.status_code} - {response.text}")
             return False
 
+        # Process the image bytes
         img = Image.open(BytesIO(response.content))
-        if img.mode in ("RGBA", "P"): 
-            img = img.convert("RGB")
         
-        # Resize to 800x480
+        # Resize to TRMNL 800x480
         img = img.resize((800, 480), Image.Resampling.LANCZOS)
+        
+        # Convert to Grayscale for e-ink
         img = img.convert("L")
 
+        # Save to the repo
         img.save("display.png")
-        print("Successfully saved image via Proxy!")
+        print("Screenshot saved successfully as display.png!")
         return True
     except Exception as e:
         print(f"Error: {e}")
@@ -39,15 +45,19 @@ def process_and_save_image():
 def poke_trmnl():
     github_user = "iitzstutta" 
     repo_name = "trmnl-fortnite"
+    # The URL TRMNL will use to download our processed image
     raw_url = f"https://raw.githubusercontent.com/{github_user}/{repo_name}/main/display.png"
     
     api_url = f"https://usetrmnl.com/api/custom_plugins/{PLUGIN_UUID}"
-    headers = {"Authorization": f"Bearer {TRMNL_API_KEY}", "Content-Type": "application/json"}
+    headers = {
+        "Authorization": f"Bearer {TRMNL_API_KEY}", 
+        "Content-Type": "application/json"
+    }
     payload = {"merge_variables": {"image_url": raw_url}}
     
-    requests.post(api_url, json=payload, headers=headers)
-    print("TRMNL notified.")
+    response = requests.post(api_url, json=payload, headers=headers)
+    print(f"TRMNL notified. Status: {response.status_code}")
 
 if __name__ == "__main__":
-    if process_and_save_image():
+    if get_screenshot():
         poke_trmnl()
