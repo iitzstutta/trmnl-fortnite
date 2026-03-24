@@ -1,38 +1,59 @@
 import requests
+from bs4 import BeautifulSoup
 import os
 
 # 1. Your ID and Key
-# This grabs the API Key you saved in GitHub Secrets
 TRMNL_API_KEY = os.environ.get("TRMNL_API_KEY")
-# Your specific Plugin UUID
-PLUGIN_UUID = "69e73978-1b63-413e-b213-8d59f077baf5" 
+PLUGIN_UUID = "69e73978-1b63-413e-b213-8d59f077baf5"
 
-# 2. The image you want to see (You can change this URL later!)
-IMAGE_URL = "https://images.nasa.gov/images/pic_of_the_day.jpg" 
+# 2. The Website to "Scrape"
+STATS_URL = "https://fortnite.gg/stats?player=Juice%20WRLD%20%E9%AC%BC"
+
+def get_fortnite_image():
+    try:
+        # Ask the website for its content
+        response = requests.get(STATS_URL, headers={'User-Agent': 'Mozilla/5.0'})
+        soup = BeautifulSoup(response.text, 'html.parser')
+        
+        # Look for the main character image on fortnite.gg
+        # It usually lives in an <img> tag inside the 'stats-header'
+        img_tag = soup.find('img', {'class': 'stats-header-avatar'})
+        
+        if img_tag and img_tag.get('src'):
+            img_url = img_tag['src']
+            # Make sure it's a full URL
+            if img_url.startswith('//'):
+                img_url = 'https:' + img_url
+            return img_url
+        
+        return None
+    except Exception as e:
+        print(f"Error finding image: {e}")
+        return None
 
 def send_to_screen():
-    # This is the "address" of your specific TRMNL plugin
-    url = f"https://usetrmnl.com/api/custom_plugins/{PLUGIN_UUID}"
+    image_url = get_fortnite_image()
     
+    if not image_url:
+        print("Could not find the player image on the page.")
+        return
+
+    url = f"https://usetrmnl.com/api/custom_plugins/{PLUGIN_UUID}"
     headers = {
         "Authorization": f"Bearer {TRMNL_API_KEY}",
         "Content-Type": "application/json"
     }
     
-    # This matches the {{ image_url }} tag you put in your TRMNL HTML
     payload = {
         "merge_variables": {
-            "image_url": IMAGE_URL
+            "image_url": image_url
         }
     }
     
-    print(f"Sending request to TRMNL...")
+    print(f"Found image: {image_url}")
+    print(f"Sending to TRMNL...")
     response = requests.post(url, json=payload, headers=headers)
-    
-    if response.status_code == 200:
-        print("Success! Your screen should update shortly.")
-    else:
-        print(f"Error {response.status_code}: {response.text}")
+    print(f"Status: {response.status_code}")
 
 if __name__ == "__main__":
     send_to_screen()
