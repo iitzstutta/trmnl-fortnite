@@ -1,7 +1,6 @@
 import requests
 import os
 import sys
-import urllib.parse # New tool to fix the URL
 from io import BytesIO
 from PIL import Image
 
@@ -10,40 +9,45 @@ TRMNL_API_KEY = os.environ.get("TRMNL_API_KEY")
 SCREENSHOT_ONE_KEY = "dQfU64rOlaCiYQ" 
 PLUGIN_UUID = "69e73978-1b63-413e-b213-8d59f077baf5"
 
-# The original player URL
-PLAYER_URL = "https://fortnite.gg/stats-card?player=Juice WRLD 鬼"
+# The Exact URL you provided
+TARGET_URL = "https://fortnite.gg/stats?player=Juice%20WRLD%20%E9%AC%BC"
 
 def get_screenshot():
     try:
-        # This part cleans the URL so the '鬼' symbol doesn't break things
-        safe_url = urllib.parse.quote(PLAYER_URL, safe=':/?=')
-        
         api_url = "https://api.screenshotone.com/take"
         params = {
             "access_key": SCREENSHOT_ONE_KEY,
-            "url": safe_url,
+            "url": TARGET_URL,
             "format": "png",
             "viewport_width": 1280,
             "viewport_height": 720,
             "block_cookie_banners": "true",
+            "block_ads": "true",
             "wait_until": "networkidle0",
-            "delay": 3 # Added a 3-second wait to ensure stats load
+            "delay": 5, # Give the stats a full 5 seconds to load
+            # This 'selector' tries to grab just the stats area
+            "selector": ".stats-header" 
         }
         
-        print(f"Requesting screenshot for: {safe_url}")
+        print(f"Requesting screenshot for: {TARGET_URL}")
         response = requests.get(api_url, params=params, timeout=60)
         
         if response.status_code != 200:
             print(f"API Error: {response.status_code} - {response.text}")
-            return False
+            # If the 'selector' fails, let's try one more time without it
+            print("Retrying without selector...")
+            params.pop("selector")
+            response = requests.get(api_url, params=params, timeout=60)
 
-        img = Image.open(BytesIO(response.content))
-        img = img.resize((800, 480), Image.Resampling.LANCZOS)
-        img = img.convert("L")
-
-        img.save("display.png")
-        print("SUCCESS: Image saved to display.png")
-        return True
+        if response.status_code == 200:
+            img = Image.open(BytesIO(response.content))
+            img = img.resize((800, 480), Image.Resampling.LANCZOS)
+            img = img.convert("L")
+            img.save("display.png")
+            print("SUCCESS: Stats image saved.")
+            return True
+        
+        return False
     except Exception as e:
         print(f"CRITICAL ERROR: {e}")
         return False
