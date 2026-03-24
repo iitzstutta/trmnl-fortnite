@@ -17,30 +17,39 @@ def get_screenshot():
             "access_key": SCREENSHOT_ONE_KEY,
             "url": TARGET_URL,
             "format": "png",
+            "viewport_width": 1280,
+            "viewport_height": 1280,
             "block_cookie_banners": "true",
             "block_ads": "true",
-            "delay": 12,
-            # 'clip_selector' is the key here - it crops exactly to the box
-            "clip_selector": ".stats-profile-stats", 
-            "device_scale_factor": 3, # Digital zoom for sharpness
+            "delay": 15, # Long delay to ensure stats load
             "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
-            "wait_until": "networkidle0"
+            "wait_until": "networkidle2"
         }
         
-        print(f"Requesting tight-crop screenshot...")
+        print(f"Requesting full-page screenshot for manual crop...")
         response = requests.get(api_url, params=params, timeout=90)
         
         if response.status_code != 200:
-            print(f"API Error: {response.status_code} - {response.text}")
+            print(f"API Error: {response.status_code}")
             return False
 
         img = Image.open(BytesIO(response.content))
-        
-        # This will stretch the stats to fill the 800x480 screen
+
+        # --- MANUAL CROP LOGIC ---
+        # This defines the area to keep: (left, top, right, bottom)
+        # We are cutting out the middle-ish area where the stats usually sit.
+        left = 150
+        top = 350
+        right = 1130
+        bottom = 850
+        img = img.crop((left, top, right, bottom))
+        # -------------------------
+
+        # Resize the cropped piece to fill the TRMNL screen
         img = img.resize((800, 480), Image.Resampling.LANCZOS).convert("L")
         
         img.save("display.png")
-        print("SUCCESS: Tight-crop image saved.")
+        print("SUCCESS: Manually cropped image saved.")
         return True
     except Exception as e:
         print(f"CRITICAL ERROR: {e}")
