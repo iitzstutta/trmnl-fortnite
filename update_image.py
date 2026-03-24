@@ -19,15 +19,15 @@ def get_screenshot():
             "format": "png",
             "block_cookie_banners": "true",
             "block_ads": "true",
-            "delay": 10,
-            # This selector targets the "Lifetime" stats specifically
+            "delay": 12,
             "selector": ".stats-profile-stats", 
-            "device_scale_factor": 2,
+            "device_scale_factor": 4, # MAX ZOOM: Renders at 4x detail
+            "selector_padding": -20, # Tighter crop: cuts off 20px of the outer edges
             "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
             "wait_until": "networkidle0"
         }
         
-        print(f"Requesting cropped stats screenshot...")
+        print(f"Requesting Max Zoom screenshot...")
         response = requests.get(api_url, params=params, timeout=90)
         
         if response.status_code != 200:
@@ -36,11 +36,11 @@ def get_screenshot():
 
         img = Image.open(BytesIO(response.content))
         
-        # Resize to fit TRMNL (800x480)
+        # We use a high-quality filter to keep the zoomed text sharp
         img = img.resize((800, 480), Image.Resampling.LANCZOS).convert("L")
         
         img.save("display.png")
-        print("SUCCESS: Image saved.")
+        print("SUCCESS: Max Zoom image saved.")
         return True
     except Exception as e:
         print(f"CRITICAL ERROR: {e}")
