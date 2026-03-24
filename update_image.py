@@ -17,18 +17,17 @@ def get_screenshot():
             "access_key": SCREENSHOT_ONE_KEY,
             "url": TARGET_URL,
             "format": "png",
-            # Increased viewport size by 25% to "zoom out" the initial view
-            "viewport_width": 1250, 
-            "viewport_height": 1250,
+            "viewport_width": 1000, # Widened slightly for a better zoom-out
+            "viewport_height": 1000,
             "block_cookie_banners": "true",
             "block_ads": "true",
             "delay": 15,
-            "device_scale_factor": 2, # Lower scale factor for a cleaner "further away" look
+            "device_scale_factor": 3, # Lowered from 4 to 3 for a "natural" zoom out
             "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
             "wait_until": "networkidle2"
         }
         
-        print(f"Requesting 25% Zoom-Out screenshot...")
+        print(f"Requesting Zoomed-Out screenshot...")
         response = requests.get(api_url, params=params, timeout=90)
         
         if response.status_code != 200:
@@ -37,20 +36,20 @@ def get_screenshot():
 
         img = Image.open(BytesIO(response.content))
 
-        # --- CROP ADJUSTED TO SHOW 25% MORE ---
-        # Moving top up to 50 and bottom down to 950 to capture more vertical space
+        # --- ADJUSTED CROP FOR ZOOM OUT ---
+        # Moving 'top' up to 100 and 'bottom' down to 800 shows more area
         left = 0
-        top = 50 
-        right = 1250
-        bottom = 950 
+        top = 100 
+        right = 1000
+        bottom = 800 
         img = img.crop((left, top, right, bottom))
-        # --------------------------------------
+        # ----------------------------------
 
         # Resize to 800x480 to fill the TRMNL screen
         img = img.resize((800, 480), Image.Resampling.LANCZOS).convert("L")
         
         img.save("display.png")
-        print("SUCCESS: 25% Zoomed-out image saved.")
+        print("SUCCESS: Zoomed-out image saved.")
         return True
     except Exception as e:
         print(f"CRITICAL ERROR: {e}")
