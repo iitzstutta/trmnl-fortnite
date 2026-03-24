@@ -6,6 +6,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # Allows GitHub to save the image file
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python
@@ -13,10 +15,15 @@ jobs:
         with:
           python-version: '3.9'
       - name: Install tools
-        run: |
-          python -m pip install --upgrade pip
-          pip install requests beautifulsoup4 Pillow
+        run: pip install requests beautifulsoup4 Pillow
       - name: Run the update
         env:
           TRMNL_API_KEY: ${{ secrets.TRMNL_API_KEY }}
         run: python update_image.py
+      - name: Commit and Push Image
+        run: |
+          git config --global user.name "GitHub Action"
+          git config --global user.email "action@github.com"
+          git add display.png
+          git commit -m "Update Fortnite Image" || exit 0
+          git push
