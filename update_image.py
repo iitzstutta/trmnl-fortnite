@@ -6,7 +6,6 @@ from PIL import Image
 
 # Configuration
 TRMNL_API_KEY = os.environ.get("TRMNL_API_KEY")
-# Your ScreenshotOne Key
 SCREENSHOT_ONE_KEY = "dQfU64rOlaCiYQ" 
 PLUGIN_UUID = "69e73978-1b63-413e-b213-8d59f077baf5"
 
@@ -24,9 +23,10 @@ def get_screenshot():
             "viewport_height": 720,
             "block_cookie_banners": "true",
             "block_ads": "true",
-            "delay": 5, # Wait 5 seconds for stats to load
-            "proxy": "true", # This hides the bot from Fortnite.gg
-            "selector": ".stats-header" # This crops it to JUST the Juice WRLD / Stats area
+            "delay": 5, # Give stats 5 seconds to load
+            "selector": ".stats-header", # Crops to the stats/character area
+            "device_scale_factor": 2, # Makes it high quality
+            "wait_until": "networkidle0"
         }
         
         print(f"Requesting screenshot from ScreenshotOne...")
