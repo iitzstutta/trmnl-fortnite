@@ -1,6 +1,7 @@
 import requests
 import os
 import sys
+import time
 from io import BytesIO
 from PIL import Image
 
@@ -13,31 +14,35 @@ PLUGIN_UUID = "69e73978-1b63-413e-b213-8d59f077baf5"
 TARGET_URL = "https://fortnite.gg/stats-card?player=Juice%20WRLD%20%E9%AC%BC"
 
 def get_screenshot():
-    try:
-        # We use the full API string directly here to be safe
-        api_url = f"https://screenshots.abstractapi.com/v1/?api_key={ABSTRACT_API_KEY}&url={TARGET_URL}"
-        
-        print(f"Connecting to AbstractAPI...")
-        response = requests.get(api_url, timeout=60) # Increased time to wait
-        
-        if response.status_code != 200:
-            print(f"API Error: {response.status_code} - {response.text}")
-            return False
+    # We're trying the alternate 'screenshot' subdomain which is often more stable
+    api_url = "https://screenshot.abstractapi.com/v1/"
+    params = {
+        "api_key": ABSTRACT_API_KEY,
+        "url": TARGET_URL
+    }
 
-        img = Image.open(BytesIO(response.content))
-        img = img.resize((800, 480), Image.Resampling.LANCZOS)
-        img = img.convert("L")
-
-        img.save("display.png")
-        print("SUCCESS: Image saved to display.png")
-        return True
-    except Exception as e:
-        print(f"CRITICAL ERROR: {e}")
-        return False
+    for attempt in range(3): # Try 3 times before giving up
+        try:
+            print(f"Attempt {attempt + 1}: Connecting to AbstractAPI...")
+            response = requests.get(api_url, params=params, timeout=30)
+            
+            if response.status_code == 200:
+                img = Image.open(BytesIO(response.content))
+                img = img.resize((800, 480), Image.Resampling.LANCZOS)
+                img = img.convert("L")
+                img.save("display.png")
+                print("SUCCESS: Image captured!")
+                return True
+            else:
+                print(f"API Error {response.status_code}: {response.text}")
+        except Exception as e:
+            print(f"Connection failed: {e}")
+            time.sleep(5) # Wait 5 seconds before retrying
+            
+    return False
 
 if __name__ == "__main__":
     if get_screenshot():
-        # Only notify TRMNL if the image actually saved
         github_user = "iitzstutta" 
         repo_name = "trmnl-fortnite"
         raw_url = f"https://raw.githubusercontent.com/{github_user}/{repo_name}/main/display.png"
@@ -49,5 +54,5 @@ if __name__ == "__main__":
         requests.post(api_url, json=payload, headers=headers)
         print("TRMNL notified.")
     else:
-        # This tells GitHub the run actually FAILED
+        print("Final attempt failed. Please check if AbstractAPI is down.")
         sys.exit(1)
